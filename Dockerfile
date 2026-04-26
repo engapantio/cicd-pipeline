@@ -8,5 +8,5 @@ FROM node:20-alpine
 WORKDIR /opt
 COPY package*.json /opt/
 COPY --from=builder /opt/build /opt/build
-RUN npm install --production
+RUN npm install 
 ENTRYPOINT ["npm", "run", "start"]
