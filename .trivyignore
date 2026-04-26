@@ -16,3 +16,12 @@ CVE-2026-24842
 CVE-2026-26960
 CVE-2026-29786
 CVE-2026-31802
+
+# nth-check ReDoS — locked by react-scripts
+CVE-2021-3803
+
+# serialize-javascript RCE — locked by webpack in react-scripts
+GHSA-5c6j-r48x-rmvq
+
+# underscore DoS — locked by react-scripts
+CVE-2026-27601

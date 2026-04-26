@@ -7,6 +7,6 @@ RUN npm install && \
 FROM node:20-alpine
 WORKDIR /opt
 COPY package*.json /opt/
-COPY --from=builder /opt/build /opt/build
 RUN npm install 
+COPY --from=builder /opt/build /opt/build
 ENTRYPOINT ["npm", "run", "start"]
