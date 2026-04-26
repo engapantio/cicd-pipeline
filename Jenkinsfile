@@ -26,19 +26,15 @@ pipeline {
 
     stage('Build') {
       steps {
-        script {
-          npm install
-        }
+        sh 'npm install'        
       }
     }
 
     stage('Test') {
       steps {
-        script {
-          npm test
-        }
+        sh 'npm test'
       }
-    }  
+    }
 
     stage('Set Image Tag') {
       steps {
