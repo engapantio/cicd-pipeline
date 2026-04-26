@@ -10,6 +10,7 @@ pipeline {
   options {
     timestamps()
     disableConcurrentBuilds()
+    buildDiscarder(logRotator(numToKeepStr: '7'))
   }
 
   environment {
@@ -113,6 +114,7 @@ pipeline {
   post {
     always {
       echo 'Pipeline finished'
+      cleanWs()
     }
     success {
       echo 'Pipeline succeeded'
