@@ -2,6 +2,12 @@
   "name": "my-app",
   "version": "0.1.0",
   "private": true,
+    "overrides": {
+    "cross-spawn": "7.0.5",
+    "glob": "10.5.0",
+    "minimatch": "9.0.6",
+    "tar": "7.5.11"
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
@@ -14,11 +20,5 @@
   },
   "devDependencies": {
     "react-scripts": "5.0.1"
-  },
-  "overrides": {
-    "cross-spawn": "7.0.5",
-    "glob": "10.5.0",
-    "minimatch": "9.0.6",
-    "tar": "7.5.11"
   }
 }
