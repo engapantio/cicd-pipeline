@@ -3,6 +3,10 @@
 pipeline {
   agent any
 
+  tools {
+    nodejs 'node'
+  }
+
   options {
     timestamps()
     disableConcurrentBuilds()
@@ -19,6 +23,22 @@ pipeline {
         checkout scm
       }
     }
+
+    stage('Build') {
+      steps {
+        script {
+          npm install
+        }
+      }
+    }
+
+    stage('Test') {
+      steps {
+        script {
+          npm test
+        }
+      }
+    }  
 
     stage('Set Image Tag') {
       steps {
