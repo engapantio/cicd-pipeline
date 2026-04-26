@@ -1,63 +1,108 @@
+@Library('jenkins-test-lib') _
+
 pipeline {
-    agent any
+  agent any
 
-    tools {
-        nodejs 'node'
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+  }
+
+  environment {
+    DOCKERHUB_REPO = 'engapantio/cicd-with-jenkins'
+    DOCKER_CREDS   = 'docker-pat'
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
     }
 
-    environment {
-        BRANCH = "${env.BRANCH_NAME}"
-        IMAGE_NAME = "${BRANCH == 'main' ? 'nodemain' : 'nodedev'}"
-        PORT_HOST = "${BRANCH == 'main' ? '3000' : '3001'}"
-        PORT_CONT = "3000"
+    stage('Set Image Tag') {
+      steps {
+        script {
+          env.IMAGE_TAG = getImageTag(env.BRANCH_NAME)
+          env.CONTAINER_NAME = getContainerName(env.BRANCH_NAME)
+          echo "Branch: ${env.BRANCH_NAME}"
+          echo "Image tag: ${env.IMAGE_TAG}"
+          echo "Container: ${env.CONTAINER_NAME}"
+        }
+      }
     }
 
-    stages {
-
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
+    stage('Hadolint') {
+      agent {
+        docker {
+          image 'hadolint/hadolint:latest-debian'
+          reuseNode true
         }
-
-        stage('Build') {
-            steps {
-                sh 'npm install'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                sh 'npm test'
-            }
-        }
-
-        stage('Docker Build') {
-            steps {
-                sh "docker build -t ${IMAGE_NAME}:v1.0 ."
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                sh """
-                    docker stop ${IMAGE_NAME} || true
-                    docker rm ${IMAGE_NAME} || true
-                    docker run -d --name ${IMAGE_NAME} \
-                        --expose ${PORT_HOST} \
-                        -p ${PORT_HOST}:${PORT_CONT} \
-                        ${IMAGE_NAME}:v1.0
-                """
-            }
-        }
+      }
+      steps {
+        lintDockerfile()
+      }
     }
 
-    post {
-        success {
-            echo "Deployed ${BRANCH} to http://localhost:${PORT_HOST}"
-        }
-        failure {
-            echo "Pipeline failed for branch: ${BRANCH}"
-        }
+    stage('Build Image') {
+     steps {
+        buildDockerImage(env.DOCKERHUB_REPO, env.IMAGE_TAG)
+      }
     }
+
+    stage('Trivy Scan') {
+      agent {
+        docker {
+          image 'aquasec/trivy:latest'
+          args '-v /var/run/docker.sock:/var/run/docker.sock'
+          reuseNode true
+        }
+      }
+      steps {
+        scanDockerImage(env.DOCKERHUB_REPO, env.IMAGE_TAG)
+      }
+    }
+
+    stage('Push Image') {
+      steps {
+        pushDockerImage(env.DOCKERHUB_REPO, env.IMAGE_TAG, env.DOCKER_CREDS)
+      }
+    }
+
+    stage('Trigger Deploy') {
+      steps {
+        script {
+          if (env.BRANCH_NAME == 'dev') {
+            build job: 'Deploy_to_dev',
+              wait: false,
+              parameters: [
+                string(name: 'DOCKERHUB_REPO', value: env.DOCKERHUB_REPO),
+                string(name: 'IMAGE_TAG', value: env.IMAGE_TAG)
+              ]
+          }
+
+          if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master') {
+            build job: 'Deploy_to_main',
+              wait: false,
+              parameters: [
+                string(name: 'DOCKERHUB_REPO', value: env.DOCKERHUB_REPO),
+                string(name: 'IMAGE_TAG', value: env.IMAGE_TAG)
+              ]
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      echo 'Pipeline finished'
+    }
+    success {
+      echo 'Pipeline succeeded'
+    }
+    failure {
+      echo 'Pipeline failed'
+    }
+  }
 }
