@@ -53,8 +53,8 @@ pipeline {
     stage('Trivy Scan') {
       agent {
         docker {
-          image 'aquasec/trivy:latest'
-          args '-v /var/run/docker.sock:/var/run/docker.sock'
+          image 'aquasec/trivy:0.69.3'
+          args "--entrypoint='' -v /var/run/docker.sock:/var/run/docker.sock -u 0"
           reuseNode true
         }
       }
